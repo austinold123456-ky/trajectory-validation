@@ -1,0 +1,54 @@
+"""Validation helpers for sampled joint trajectories."""
+
+import numpy as np
+
+def validate_trajectory(
+    timestamps: np.ndarray,
+    positions: np.ndarray,
+    lower_limits: np.ndarray,
+    upper_limits: np.ndarray,
+) -> dict[str, bool | np.ndarray]:
+    """Validate a joint trajectory against its per-joint limits."""
+    if timestamps.ndim != 1:
+        raise ValueError("timestamps must be a 1-dimensional array")
+    if positions.ndim != 2:
+        raise ValueError("positions must be a 2-dimensional array")
+    if timestamps.shape[0] != positions.shape[0]:
+        raise ValueError("timestamps length must match positions.shape[0]")
+    if positions.shape[0] == 0:
+        raise ValueError("trajectory must contain at least one time sample")
+    if lower_limits.ndim != 1:
+        raise ValueError("lower_limits must be a 1-dimensional array")
+    if upper_limits.ndim != 1:
+        raise ValueError("upper_limits must be a 1-dimensional array")
+
+    joint_count = positions.shape[1]
+    if lower_limits.shape[0] != joint_count:
+        raise ValueError("lower_limits length must match positions.shape[1]")
+    if upper_limits.shape[0] != joint_count:
+        raise ValueError("upper_limits length must match positions.shape[1]")
+    if np.any(lower_limits > upper_limits):
+        raise ValueError("each lower limit must be less than or equal to its upper limit")
+
+    finite_positions = np.isfinite(positions)
+    finite_timestamps = np.isfinite(timestamps)
+    non_finite_rows = np.flatnonzero(~finite_timestamps | ~np.all(finite_positions, axis=1))
+
+    finite_limit_violations = finite_positions & (
+        (positions < lower_limits) | (positions > upper_limits)
+    )
+    out_of_limit_rows = np.flatnonzero(np.any(finite_limit_violations, axis=1))
+
+    invalid_rows = np.union1d(non_finite_rows, out_of_limit_rows)
+    if np.any(~finite_positions):
+        maximum_motion_per_joint = np.full(joint_count, np.nan)
+    else:
+        maximum_motion_per_joint = np.max(np.abs(positions - positions[0]), axis=0)
+
+    return {
+        "is_valid": invalid_rows.size == 0,
+        "invalid_rows": invalid_rows,
+        "non_finite_rows": non_finite_rows,
+        "out_of_limit_rows": out_of_limit_rows,
+        "maximum_motion_per_joint": maximum_motion_per_joint,
+    }
