@@ -19,7 +19,7 @@ python -m pytest -q
 ```python
 import numpy as np
 
-from validate import validate_trajectory
+from trajectory_validator import validate_trajectory
 
 timestamps = np.array([0.0, 1.0])
 positions = np.array([[0.0, 0.0], [0.5, -0.5]])

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from validate import validate_trajectory
+from trajectory_validator import validate_trajectory
 
 
 def test_valid_trajectory() -> None:
