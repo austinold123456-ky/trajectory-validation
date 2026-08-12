@@ -1,6 +1,6 @@
 """Trajectory validation package."""
 
-from .io import load_trajectory_npz
+from .io import load_trajectory_npz, save_trajectory_npz
 from .validate import (
     TrajectoryStructureError,
     TrajectoryValidationReport,
@@ -11,5 +11,6 @@ __all__ = [
     "TrajectoryStructureError",
     "TrajectoryValidationReport",
     "load_trajectory_npz",
+    "save_trajectory_npz",
     "validate_trajectory",
 ]

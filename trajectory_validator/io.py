@@ -14,3 +14,12 @@ def load_trajectory_npz(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
             raise ValueError("NPZ file is missing required 'positions' array")
 
         return trajectory_file["timestamps"], trajectory_file["positions"]
+
+
+def save_trajectory_npz(
+    path: str | Path,
+    timestamps: np.ndarray,
+    positions: np.ndarray,
+) -> None:
+    """Save timestamps and positions arrays to an NPZ file."""
+    np.savez(path, timestamps=timestamps, positions=positions)
