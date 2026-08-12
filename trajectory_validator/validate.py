@@ -5,6 +5,10 @@ from dataclasses import dataclass
 import numpy as np
 
 
+class TrajectoryStructureError(ValueError):
+    """Raised when trajectory inputs have incompatible structure."""
+
+
 @dataclass(frozen=True)
 class TrajectoryValidationReport:
     """Results from validating a joint trajectory."""
@@ -24,25 +28,27 @@ def validate_trajectory(
 ) -> TrajectoryValidationReport:
     """Validate a joint trajectory against its per-joint limits."""
     if timestamps.ndim != 1:
-        raise ValueError("timestamps must be a 1-dimensional array")
+        raise TrajectoryStructureError("timestamps must be a 1-dimensional array")
     if positions.ndim != 2:
-        raise ValueError("positions must be a 2-dimensional array")
+        raise TrajectoryStructureError("positions must be a 2-dimensional array")
     if timestamps.shape[0] != positions.shape[0]:
-        raise ValueError("timestamps length must match positions.shape[0]")
+        raise TrajectoryStructureError("timestamps length must match positions.shape[0]")
     if positions.shape[0] == 0:
-        raise ValueError("trajectory must contain at least one time sample")
+        raise TrajectoryStructureError("trajectory must contain at least one time sample")
     if lower_limits.ndim != 1:
-        raise ValueError("lower_limits must be a 1-dimensional array")
+        raise TrajectoryStructureError("lower_limits must be a 1-dimensional array")
     if upper_limits.ndim != 1:
-        raise ValueError("upper_limits must be a 1-dimensional array")
+        raise TrajectoryStructureError("upper_limits must be a 1-dimensional array")
 
     joint_count = positions.shape[1]
     if lower_limits.shape[0] != joint_count:
-        raise ValueError("lower_limits length must match positions.shape[1]")
+        raise TrajectoryStructureError("lower_limits length must match positions.shape[1]")
     if upper_limits.shape[0] != joint_count:
-        raise ValueError("upper_limits length must match positions.shape[1]")
+        raise TrajectoryStructureError("upper_limits length must match positions.shape[1]")
     if np.any(lower_limits > upper_limits):
-        raise ValueError("each lower limit must be less than or equal to its upper limit")
+        raise TrajectoryStructureError(
+            "each lower limit must be less than or equal to its upper limit"
+        )
 
     finite_positions = np.isfinite(positions)
     finite_timestamps = np.isfinite(timestamps)

@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from trajectory_validator import TrajectoryValidationReport, validate_trajectory
+from trajectory_validator import (
+    TrajectoryStructureError,
+    TrajectoryValidationReport,
+    validate_trajectory,
+)
 
 
 def test_valid_trajectory() -> None:
@@ -20,7 +24,7 @@ def test_valid_trajectory() -> None:
 
 
 def test_rejects_mismatched_timestamp_and_position_lengths() -> None:
-    with pytest.raises(ValueError, match="timestamps length"):
+    with pytest.raises(TrajectoryStructureError, match="timestamps length"):
         validate_trajectory(
             np.array([0.0]),
             np.array([[0.0], [1.0]]),
@@ -30,7 +34,7 @@ def test_rejects_mismatched_timestamp_and_position_lengths() -> None:
 
 
 def test_rejects_empty_trajectory() -> None:
-    with pytest.raises(ValueError, match="trajectory must contain at least one time sample"):
+    with pytest.raises(TrajectoryStructureError, match="trajectory must contain at least one time sample"):
         validate_trajectory(
             np.array([]),
             np.empty((0, 2)),
@@ -83,7 +87,7 @@ def test_reports_values_outside_joint_limits() -> None:
 
 
 def test_rejects_wrong_limit_array_length() -> None:
-    with pytest.raises(ValueError, match="lower_limits length"):
+    with pytest.raises(TrajectoryStructureError, match="lower_limits length"):
         validate_trajectory(
             np.array([0.0]),
             np.array([[0.0, 0.0]]),
