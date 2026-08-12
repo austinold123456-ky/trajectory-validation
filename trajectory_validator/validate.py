@@ -1,8 +1,12 @@
 """Validation helpers for sampled joint trajectories."""
 
+import logging
 from dataclasses import dataclass
 
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 class TrajectoryStructureError(ValueError):
@@ -64,6 +68,13 @@ def validate_trajectory(
         maximum_motion_per_joint = np.full(joint_count, np.nan)
     else:
         maximum_motion_per_joint = np.max(np.abs(positions - positions[0]), axis=0)
+
+    if invalid_rows.size:
+        logger.warning(
+            "Trajectory has %d invalid rows: %s",
+            invalid_rows.size,
+            invalid_rows.tolist(),
+        )
 
     return TrajectoryValidationReport(
         is_valid=invalid_rows.size == 0,

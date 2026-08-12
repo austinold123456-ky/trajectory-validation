@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pytest
 
@@ -21,6 +23,33 @@ def test_valid_trajectory() -> None:
     np.testing.assert_array_equal(report.invalid_rows, np.array([], dtype=int))
     np.testing.assert_array_equal(report.non_finite_rows, np.array([], dtype=int))
     np.testing.assert_array_equal(report.out_of_limit_rows, np.array([], dtype=int))
+
+
+def test_valid_trajectory_produces_no_warning_log(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING, logger="trajectory_validator.validate"):
+        validate_trajectory(
+            np.array([0.0, 1.0]),
+            np.array([[0.0], [0.5]]),
+            np.array([-1.0]),
+            np.array([1.0]),
+        )
+
+    assert not caplog.records
+
+
+def test_invalid_trajectory_logs_invalid_row_indices(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING, logger="trajectory_validator.validate"):
+        validate_trajectory(
+            np.array([0.0, 1.0, 2.0]),
+            np.array([[0.0], [1.5], [-1.5]]),
+            np.array([-1.0]),
+            np.array([1.0]),
+        )
+
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelno == logging.WARNING
+    assert "2 invalid rows" in caplog.records[0].getMessage()
+    assert "[1, 2]" in caplog.records[0].getMessage()
 
 
 def test_rejects_mismatched_timestamp_and_position_lengths() -> None:
