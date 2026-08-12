@@ -1,13 +1,27 @@
 """Validation helpers for sampled joint trajectories."""
 
+from dataclasses import dataclass
+
 import numpy as np
+
+
+@dataclass(frozen=True)
+class TrajectoryValidationReport:
+    """Results from validating a joint trajectory."""
+
+    is_valid: bool
+    invalid_rows: np.ndarray
+    non_finite_rows: np.ndarray
+    out_of_limit_rows: np.ndarray
+    maximum_motion_per_joint: np.ndarray
+
 
 def validate_trajectory(
     timestamps: np.ndarray,
     positions: np.ndarray,
     lower_limits: np.ndarray,
     upper_limits: np.ndarray,
-) -> dict[str, bool | np.ndarray]:
+) -> TrajectoryValidationReport:
     """Validate a joint trajectory against its per-joint limits."""
     if timestamps.ndim != 1:
         raise ValueError("timestamps must be a 1-dimensional array")
@@ -45,10 +59,10 @@ def validate_trajectory(
     else:
         maximum_motion_per_joint = np.max(np.abs(positions - positions[0]), axis=0)
 
-    return {
-        "is_valid": invalid_rows.size == 0,
-        "invalid_rows": invalid_rows,
-        "non_finite_rows": non_finite_rows,
-        "out_of_limit_rows": out_of_limit_rows,
-        "maximum_motion_per_joint": maximum_motion_per_joint,
-    }
+    return TrajectoryValidationReport(
+        is_valid=invalid_rows.size == 0,
+        invalid_rows=invalid_rows,
+        non_finite_rows=non_finite_rows,
+        out_of_limit_rows=out_of_limit_rows,
+        maximum_motion_per_joint=maximum_motion_per_joint,
+    )

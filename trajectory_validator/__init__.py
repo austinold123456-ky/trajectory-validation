@@ -1,5 +1,5 @@
 """Trajectory validation package."""
 
-from .validate import validate_trajectory
+from .validate import TrajectoryValidationReport, validate_trajectory
 
-__all__ = ["validate_trajectory"]
+__all__ = ["TrajectoryValidationReport", "validate_trajectory"]
