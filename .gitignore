@@ -3,3 +3,7 @@ __pycache__/
 .pytest_cache/
 hello.py
 .venv/
+dist/
+.package-test-venv/
+build/
+trajectory_validator.egg-info/
