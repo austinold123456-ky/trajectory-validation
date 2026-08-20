@@ -21,6 +21,7 @@ class TrajectoryValidationReport:
     invalid_rows: np.ndarray
     non_finite_rows: np.ndarray
     out_of_limit_rows: np.ndarray
+    non_increasing_timestamp_rows: np.ndarray
     maximum_motion_per_joint: np.ndarray
 
 
@@ -57,13 +58,22 @@ def validate_trajectory(
     finite_positions = np.isfinite(positions)
     finite_timestamps = np.isfinite(timestamps)
     non_finite_rows = np.flatnonzero(~finite_timestamps | ~np.all(finite_positions, axis=1))
+    finite_timestamp_pairs = finite_timestamps[1:] & finite_timestamps[:-1]
+    timestamp_order_violations = np.zeros(timestamps.shape[0] - 1, dtype=bool)
+    timestamp_order_violations[finite_timestamp_pairs] = (
+        timestamps[1:][finite_timestamp_pairs] <= timestamps[:-1][finite_timestamp_pairs]
+    )
+    non_increasing_timestamp_rows = np.flatnonzero(timestamp_order_violations) + 1
 
     finite_limit_violations = finite_positions & (
         (positions < lower_limits) | (positions > upper_limits)
     )
     out_of_limit_rows = np.flatnonzero(np.any(finite_limit_violations, axis=1))
 
-    invalid_rows = np.union1d(non_finite_rows, out_of_limit_rows)
+    invalid_rows = np.union1d(
+        np.union1d(non_finite_rows, out_of_limit_rows),
+        non_increasing_timestamp_rows,
+    )
     if np.any(~finite_positions):
         maximum_motion_per_joint = np.full(joint_count, np.nan)
     else:
@@ -81,5 +91,6 @@ def validate_trajectory(
         invalid_rows=invalid_rows,
         non_finite_rows=non_finite_rows,
         out_of_limit_rows=out_of_limit_rows,
+        non_increasing_timestamp_rows=non_increasing_timestamp_rows,
         maximum_motion_per_joint=maximum_motion_per_joint,
     )

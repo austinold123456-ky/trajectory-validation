@@ -23,6 +23,9 @@ def test_valid_trajectory() -> None:
     np.testing.assert_array_equal(report.invalid_rows, np.array([], dtype=int))
     np.testing.assert_array_equal(report.non_finite_rows, np.array([], dtype=int))
     np.testing.assert_array_equal(report.out_of_limit_rows, np.array([], dtype=int))
+    np.testing.assert_array_equal(
+        report.non_increasing_timestamp_rows, np.array([], dtype=int)
+    )
 
 
 def test_valid_trajectory_produces_no_warning_log(caplog: pytest.LogCaptureFixture) -> None:
@@ -85,6 +88,9 @@ def test_reports_non_finite_positions(bad_value: float) -> None:
     np.testing.assert_array_equal(report.non_finite_rows, np.array([1]))
     np.testing.assert_array_equal(report.invalid_rows, np.array([1]))
     np.testing.assert_array_equal(report.out_of_limit_rows, np.array([], dtype=int))
+    np.testing.assert_array_equal(
+        report.non_increasing_timestamp_rows, np.array([], dtype=int)
+    )
     assert np.isnan(report.maximum_motion_per_joint).all()
 
 
@@ -149,3 +155,55 @@ def test_does_not_modify_input_arrays() -> None:
         (timestamps, positions, lower_limits, upper_limits), originals
     ):
         assert np.array_equal(actual, original, equal_nan=True)
+
+
+def test_accepts_strictly_increasing_timestamps() -> None:
+    report = validate_trajectory(
+        np.array([0.0, 0.5, 1.0]),
+        np.array([[0.0], [0.0], [0.0]]),
+        np.array([-1.0]),
+        np.array([1.0]),
+    )
+
+    assert report.is_valid is True
+    np.testing.assert_array_equal(report.non_increasing_timestamp_rows, np.array([], dtype=int))
+
+
+def test_reports_duplicate_timestamp_at_later_index() -> None:
+    report = validate_trajectory(
+        np.array([0.0, 0.0, 1.0]),
+        np.array([[0.0], [0.0], [0.0]]),
+        np.array([-1.0]),
+        np.array([1.0]),
+    )
+
+    assert report.is_valid is False
+    np.testing.assert_array_equal(report.non_increasing_timestamp_rows, np.array([1]))
+    np.testing.assert_array_equal(report.invalid_rows, np.array([1]))
+
+
+def test_reports_decreasing_timestamp_at_later_index() -> None:
+    report = validate_trajectory(
+        np.array([0.0, 1.0, 0.5]),
+        np.array([[0.0], [0.0], [0.0]]),
+        np.array([-1.0]),
+        np.array([1.0]),
+    )
+
+    assert report.is_valid is False
+    np.testing.assert_array_equal(report.non_increasing_timestamp_rows, np.array([2]))
+    np.testing.assert_array_equal(report.invalid_rows, np.array([2]))
+
+
+def test_does_not_compare_timestamp_order_across_non_finite_timestamp() -> None:
+    report = validate_trajectory(
+        np.array([0.0, np.nan, -1.0]),
+        np.array([[0.0], [0.0], [0.0]]),
+        np.array([-1.0]),
+        np.array([1.0]),
+    )
+
+    assert report.is_valid is False
+    np.testing.assert_array_equal(report.non_finite_rows, np.array([1]))
+    np.testing.assert_array_equal(report.non_increasing_timestamp_rows, np.array([], dtype=int))
+    np.testing.assert_array_equal(report.invalid_rows, np.array([1]))
